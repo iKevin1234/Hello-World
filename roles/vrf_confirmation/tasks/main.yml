@@ -1,0 +1,27 @@
+---
+# Include this role after subinterface migration and before the remaining VRF changes.
+- name: Confirm remaining VRF command conversion
+  ansible.builtin.pause:
+    prompt: |
+      Sub-interfaces have been migrated to VRF.
+      Do you want to continue converting all commands to have VRF applied?
+
+      Type YES to continue or Type NO to stop the playbook here.
+  register: vrf_confirmation
+  run_once: true
+
+- name: Require an explicit YES or NO
+  ansible.builtin.assert:
+    that:
+      - vrf_confirmation.user_input | default('') | trim | upper in ['YES', 'NO']
+    fail_msg: "Invalid response. Enter YES or NO."
+  run_once: true
+
+- name: Stop the current play if NO was selected
+  ansible.builtin.meta: end_play
+  when: vrf_confirmation.user_input | trim | upper == 'NO'
+
+- name: Confirm continuation
+  ansible.builtin.debug:
+    msg: "YES selected. Continuing VRF configuration."
+  run_once: true
